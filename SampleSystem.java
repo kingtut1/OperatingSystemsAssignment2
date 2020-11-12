@@ -1,6 +1,5 @@
 import java.util.Random;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
 public class SampleSystem {
     static Semaphore mutex = new Semaphore(1, true);
