@@ -1,5 +1,6 @@
 import java.util.Random;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 public class SampleSystem {
     static Semaphore mutex = new Semaphore(1, true);
@@ -24,6 +25,7 @@ public class SampleSystem {
                 try {
                     mutex.acquire();
                     System.out.println(id + " acquired the mutex");
+                    System.out.println(id + " has a threadsize of " + threadSize);
                     printRepo();
                     if (threadSize < maxSize) {
                         // Size is randomly generated between 1 element to the max size that is allowed for this producer
@@ -47,9 +49,10 @@ public class SampleSystem {
                     System.out.println(e);
                 } finally {
                     printRepo();
+                    System.out.println(id + "'s current threadsize: " + threadSize);
                     System.out.println(id + " is releasing the mutex\n\n");
-
                     mutex.release();
+                    
                 }
             }
 
@@ -58,10 +61,17 @@ public class SampleSystem {
     }
 
     public static class ConsumerThread extends Thread {
-        String id = "";
+        String id = ""; 
+        ProducerThread A;
+        ProducerThread B;
+        ProducerThread C;
 
-        ConsumerThread(String id) {
+        //Consumer takes in an id, along with the other 3 producers
+        ConsumerThread(String id, ProducerThread A, ProducerThread B, ProducerThread C) {
             this.id = id;
+            this.A = A;
+            this.B = B;
+            this.C = C;
         }
 
         public void run() {
@@ -69,6 +79,7 @@ public class SampleSystem {
                 try {
                     mutex.acquire();
                     System.out.println(id + " acquired the mutex");
+                    printRepo();
 
                     if (size != 0) {
                         // Generate some random size to take out of the repo
@@ -78,7 +89,17 @@ public class SampleSystem {
 
                         // Take some size out of the repository
                         for (int i = 0; i < randomNum; i++) {
-                            repo[size] = null;
+                            //Decreasing from the respective threads
+                            if( A.id == repo[size-1]){
+                                A.threadSize -= 1;
+                            }
+                            else if( B.id == repo[size-1]){
+                                B.threadSize -= 1;
+                            }
+                            else if( C.id == repo[size-1]){
+                                C.threadSize -= 1;
+                            }
+                            repo[size-1] = null;
                             size--;
                         }
 
@@ -107,16 +128,16 @@ public class SampleSystem {
         System.out.println("}");
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
 
         ProducerThread A = new ProducerThread("AThread", 5);
         ProducerThread B = new ProducerThread("BThread", 6);
         ProducerThread C = new ProducerThread("CThread", 1);
 
-        ConsumerThread D = new ConsumerThread("DThread");
-        ConsumerThread E = new ConsumerThread("EThread");
-        ConsumerThread F = new ConsumerThread("FThread");
-        ConsumerThread G = new ConsumerThread("GThread");
+        ConsumerThread D = new ConsumerThread("DThread", A, B, C);
+        ConsumerThread E = new ConsumerThread("EThread", A, B, C);
+        ConsumerThread F = new ConsumerThread("FThread", A, B, C);
+        ConsumerThread G = new ConsumerThread("GThread", A, B, C);
 
         A.start();
         B.start();
